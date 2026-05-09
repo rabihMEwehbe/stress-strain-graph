@@ -1,82 +1,91 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def get_inputs():
     loads_input = input("Enter forces (lb) separated by commas: ")
     loads = [float(f) for f in loads_input.split(',')]
 
-    A = float(input("Enter cross-sectional area (ft^2): "))
-    L = float(input("Enter original length (m): "))
+    area_ft2 = float(input("Enter cross-sectional area (ft²): "))
+    length = float(input("Enter original length (m): "))
     sigma_y = float(input("Enter yield stress (psi): "))
+    delta_L_input = input("Enter ΔL values or 'auto': ")
 
-    delta_L_input = input("Enter change in length values or 'auto': ")
+    return loads, area_ft2, length, sigma_y, delta_L_input
 
-    return loads, A, L, sigma_y, delta_L_input
 
-def compute_stress_strain(loads, A, L, sigma_y, delta_L_input):
-    A = A * 144  # ft² ? in²
+def compute_stress_strain(loads, area_ft2, length, sigma_y, delta_L_input):
+    E = 28e6  # psi (typical steel assumption)
+
+    area_in2 = area_ft2 * 144  # ft² → in²
 
     stress_values = []
     strain_values = []
 
     for i, F in enumerate(loads):
-        stress = F / A
+        stress = F / area_in2
 
-        if delta_L_input.lower() == 'auto':
-            E = 28e6  # psi (304 SS approximation)
+        if delta_L_input.lower() == "auto":
             strain = stress / E
         else:
             delta_L_list = [float(x) for x in delta_L_input.split(',')]
-            strain = delta_L_list[i] / L
+            strain = delta_L_list[i] / length
 
+        # yield warning (elastic model only)
         if stress \u003e sigma_y:
-            stress = sigma_y
-            strain = sigma_y / 28e6
+            print(f"Warning: Load {F} lb exceeds yield stress!")
 
         stress_values.append(stress)
         strain_values.append(strain)
 
-    return np.array(strain_values), np.array(stress_values)
+    return np.array(strain_values), np.array(stress_values), E
 
-def analyze_material(strain, stress):
-    # Young's Modulus from elastic region (first 2-3 points)
-    n = min(3, len(strain))
-    E = np.polyfit(strain[:n], stress[:n], 1)[0]
 
-    max_stress = np.max(stress)
-    max_strain = np.max(strain)
+def analyze(strain, stress):
+    E_est = np.polyfit(strain[:3], stress[:3], 1)[0]
+    return E_est
 
-    return E, max_stress, max_strain
 
-def plot_curve(strain, stress, E):
-    plt.figure(figsize=(7,5))
-    plt.plot(strain, stress, marker='o', label='Stress-Strain Curve')
+def plot_results(strain, stress, sigma_y, E):
+    plt.figure(figsize=(7, 5))
 
-    plt.title("Material Stress-Strain Behavior")
+    plt.plot(strain, stress, marker='o', linewidth=2, label="Stress–Strain Curve")
+
+    plt.axhline(y=sigma_y, linestyle='--', color='r', label="Yield Stress")
+
+    plt.title("Stress–Strain Behavior (Elastic Region)")
     plt.xlabel("Strain (m/m)")
     plt.ylabel("Stress (psi)")
     plt.grid(True)
-
-    plt.text(0.0005, max(stress)*0.8,
-             f"Young's Modulus ˜ {E:.2e} psi",
-             fontsize=10)
-
     plt.legend()
+
+    plt.text(
+        0.0005,
+        max(stress) * 0.8,
+        f"E ≈ {E:.2e} psi",
+        fontsize=10,
+        bbox=dict(facecolor='white', alpha=0.7)
+    )
+
     plt.show()
 
+
 def main():
-    loads, A, L, sigma_y, delta_L_input = get_inputs()
+    loads, area, length, sigma_y, delta_L_input = get_inputs()
 
-    strain, stress = compute_stress_strain(loads, A, L, sigma_y, delta_L_input)
+    strain, stress, E = compute_stress_strain(
+        loads, area, length, sigma_y, delta_L_input
+    )
 
-    E, max_stress, max_strain = analyze_material(strain, stress)
+    E_est = analyze(strain, stress)
 
     print("\n--- Material Summary ---")
-    print(f"Young's Modulus: {E:.2e} psi")
-    print(f"Max Stress: {max_stress:.2f} psi")
-    print(f"Max Strain: {max_strain:.5f}")
+    print(f"Young's Modulus (input assumption): {E:.2e} psi")
+    print(f"Estimated Modulus (from data): {E_est:.2e} psi")
+    print(f"Max Stress: {np.max(stress):.2f} psi")
+    print(f"Max Strain: {np.max(strain):.6e}")
 
-    plot_curve(strain, stress, E)
+    plot_results(strain, stress, sigma_y, E)
 
 
 if __name__ == "__main__":

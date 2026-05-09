@@ -1,33 +1,42 @@
-# Stress-Strain Analysis Tool
+# Stress–Strain Analysis Tool (Elastic Region)
 
 ## Overview
-This project calculates and visualizes the stress-strain relationship of a material under different applied loads in the elastic region. It also includes basic yield stress validation and optional strain calculation methods.
+This project is a Python-based engineering tool that computes and visualizes the stress–strain behavior of a material under applied loads in the elastic region. It applies basic mechanics of materials principles and Hooke’s Law to simulate uniaxial tensile behavior.
 
-## Purpose
-The goal of this project is to simulate a simplified tensile test experiment using Python. It demonstrates core mechanical engineering concepts such as stress, strain, Hooke’s Law, and yield strength behavior.
-
-## Engineering Concepts Used
-- Stress calculation (σ = F / A)
-- Strain calculation (ε = ΔL / L or σ / E)
-- Young’s Modulus approximation
-- Yield stress limitation
-- Unit conversion (ft² to in²)
-- Elastic region material behavior
+---
 
 ## Features
-- User input for loads, geometry, and material properties
-- Automatic or manual strain calculation
+- Stress calculation from applied loads
+- Strain calculation (automatic or manual input)
 - Yield stress warning system
-- Stress vs strain visualization
-- Basic material behavior simulation
+- Young’s modulus estimation from data
+- Stress–strain visualization using matplotlib
+
+---
+
+## Engineering Concepts
+- Stress: σ = F / A
+- Strain: ε = ΔL / L or σ / E
+- Hooke’s Law (linear elasticity)
+- Unit conversion (ft² to in²)
+- Material yield limit concept
+
+---
 
 ## Tools Used
 - Python
 - NumPy
 - Matplotlib
 
-## Output
-Generates a stress vs strain curve for visual analysis of elastic deformation behavior.
+---
+
+## Output Example
+- Stress–strain curve
+- Estimated Young’s modulus
+- Yield stress reference line
+- Summary statistics
+
+---
 
 ## Author
 Rabih Wehbe

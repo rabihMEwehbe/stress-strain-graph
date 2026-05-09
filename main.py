@@ -1,47 +1,83 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Step 1: get inputs
-loads_input = input("Enter forces (lb) separated by commas: ")
-loads = [float(f) for f in loads_input.split(',')]  # convert to list of floats
+def get_inputs():
+    loads_input = input("Enter forces (lb) separated by commas: ")
+    loads = [float(f) for f in loads_input.split(',')]
 
-A = float(input("Enter cross-sectional area (square feet): "))
-delta_L_input = input("Enter change in lengths (m) separated by commas, or 'auto' to calculate: ")
-L = float(input("Enter original length (m): "))
-sigma_y = float(input("Enter yield stress (psi): "))
+    A = float(input("Enter cross-sectional area (ft^2): "))
+    L = float(input("Enter original length (m): "))
+    sigma_y = float(input("Enter yield stress (psi): "))
 
-# Step 2: convert area to square inches
-A = A * 144  # ft² → in²
+    delta_L_input = input("Enter change in length values or 'auto': ")
 
-# Step 3: calculate stress and strain for all loads
-stress_values = []
-strain_values = []
+    return loads, A, L, sigma_y, delta_L_input
 
-for i, F in enumerate(loads):
-    stress = F / A
-    # Optional: calculate delta_L automatically if user wants
-    if delta_L_input.lower() == 'auto':
-        strain = stress / (28e6)  # Using E = 28e6 psi for 304 SS
-        delta_L = strain * L
-    else:
-        delta_L_list = [float(x) for x in delta_L_input.split(',')]
-        delta_L = delta_L_list[i]
-        strain = delta_L / L
-    
-    # Step 4: ensure stress does not exceed yield
-    if stress > sigma_y:
-        print(f"Warning: stress {stress:.0f} psi for load {F} lb exceeds yield stress!")
-        stress = sigma_y
-        strain = sigma_y / (28e6)  # recalc strain at yield
-    
-    stress_values.append(stress)
-    strain_values.append(strain)
+def compute_stress_strain(loads, A, L, sigma_y, delta_L_input):
+    A = A * 144  # ft² ? in²
 
-# Step 5: plot stress vs strain graph
-plt.figure(figsize=(6,4))
-plt.plot(strain_values, stress_values, marker='o', color='b')
-plt.title("Elastic Behavior (Stress vs Strain)")
-plt.xlabel("Strain, m/m")
-plt.ylabel("Stress, psi")
-plt.grid(True)
-plt.show()
+    stress_values = []
+    strain_values = []
+
+    for i, F in enumerate(loads):
+        stress = F / A
+
+        if delta_L_input.lower() == 'auto':
+            E = 28e6  # psi (304 SS approximation)
+            strain = stress / E
+        else:
+            delta_L_list = [float(x) for x in delta_L_input.split(',')]
+            strain = delta_L_list[i] / L
+
+        if stress \u003e sigma_y:
+            stress = sigma_y
+            strain = sigma_y / 28e6
+
+        stress_values.append(stress)
+        strain_values.append(strain)
+
+    return np.array(strain_values), np.array(stress_values)
+
+def analyze_material(strain, stress):
+    # Young's Modulus from elastic region (first 2-3 points)
+    n = min(3, len(strain))
+    E = np.polyfit(strain[:n], stress[:n], 1)[0]
+
+    max_stress = np.max(stress)
+    max_strain = np.max(strain)
+
+    return E, max_stress, max_strain
+
+def plot_curve(strain, stress, E):
+    plt.figure(figsize=(7,5))
+    plt.plot(strain, stress, marker='o', label='Stress-Strain Curve')
+
+    plt.title("Material Stress-Strain Behavior")
+    plt.xlabel("Strain (m/m)")
+    plt.ylabel("Stress (psi)")
+    plt.grid(True)
+
+    plt.text(0.0005, max(stress)*0.8,
+             f"Young's Modulus ˜ {E:.2e} psi",
+             fontsize=10)
+
+    plt.legend()
+    plt.show()
+
+def main():
+    loads, A, L, sigma_y, delta_L_input = get_inputs()
+
+    strain, stress = compute_stress_strain(loads, A, L, sigma_y, delta_L_input)
+
+    E, max_stress, max_strain = analyze_material(strain, stress)
+
+    print("\n--- Material Summary ---")
+    print(f"Young's Modulus: {E:.2e} psi")
+    print(f"Max Stress: {max_stress:.2f} psi")
+    print(f"Max Strain: {max_strain:.5f}")
+
+    plot_curve(strain, stress, E)
+
+
+if __name__ == "__main__":
+    main()
